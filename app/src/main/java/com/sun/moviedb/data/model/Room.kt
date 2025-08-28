@@ -6,6 +6,6 @@ data class Room(
     var roomCode: String = "", // Movie slug
     var createAt: Long = 0L,
     var createBy: String = "", // User ID of the creator
-    var command: String= "",
+    var command: String = "",
 )
 

@@ -14,7 +14,8 @@ class NewestMoviePagerAdapter(
 ) : BaseAdapter<Item, NewestMoviePagerAdapter.MovieViewHolder>(DIFF_CALLBACK) {
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): MovieViewHolder {
-        val binding = ItemNewestMoviePagerBinding.inflate(LayoutInflater.from(parent.context), parent, false)
+        val binding =
+            ItemNewestMoviePagerBinding.inflate(LayoutInflater.from(parent.context), parent, false)
         return MovieViewHolder(binding)
     }
 
@@ -22,7 +23,8 @@ class NewestMoviePagerAdapter(
         holder.bind(getItem(position))
     }
 
-    inner class MovieViewHolder(private val binding: ItemNewestMoviePagerBinding) : RecyclerView.ViewHolder(binding.root) {
+    inner class MovieViewHolder(private val binding: ItemNewestMoviePagerBinding) :
+        RecyclerView.ViewHolder(binding.root) {
         fun bind(item: Item) {
             Glide.with(binding.imgPoster).load(item.posterUrl).into(binding.imgPoster)
             binding.txtTitle.text = item.name
@@ -33,8 +35,11 @@ class NewestMoviePagerAdapter(
 
     companion object {
         val DIFF_CALLBACK = object : DiffUtil.ItemCallback<Item>() {
-            override fun areItemsTheSame(oldItem: Item, newItem: Item): Boolean = oldItem.id == newItem.id
-            override fun areContentsTheSame(oldItem: Item, newItem: Item): Boolean = oldItem == newItem
+            override fun areItemsTheSame(oldItem: Item, newItem: Item): Boolean =
+                oldItem.id == newItem.id
+
+            override fun areContentsTheSame(oldItem: Item, newItem: Item): Boolean =
+                oldItem == newItem
         }
     }
 }

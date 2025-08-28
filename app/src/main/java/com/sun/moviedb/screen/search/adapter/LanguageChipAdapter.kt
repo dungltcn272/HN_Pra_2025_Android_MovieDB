@@ -4,11 +4,11 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.TextView
-import com.sun.moviedb.R
-import com.sun.moviedb.utils.base.BaseAdapter
 import androidx.recyclerview.widget.DiffUtil
 import androidx.recyclerview.widget.RecyclerView
+import com.sun.moviedb.R
 import com.sun.moviedb.utils.LanguageMapper
+import com.sun.moviedb.utils.base.BaseAdapter
 
 class LanguageChipAdapter(
     private val onChipClick: (String?) -> Unit
@@ -61,8 +61,11 @@ class LanguageChipAdapter(
 
     companion object {
         val DIFF_CALLBACK = object : DiffUtil.ItemCallback<String>() {
-            override fun areItemsTheSame(oldItem: String, newItem: String): Boolean = oldItem == newItem
-            override fun areContentsTheSame(oldItem: String, newItem: String): Boolean = oldItem == newItem
+            override fun areItemsTheSame(oldItem: String, newItem: String): Boolean =
+                oldItem == newItem
+
+            override fun areContentsTheSame(oldItem: String, newItem: String): Boolean =
+                oldItem == newItem
         }
     }
 }

@@ -69,16 +69,39 @@ interface MovieDataSource {
             callback: (NetworkResult<MovieListResponse>) -> Unit
         ): Future<*>
 
-        fun getCategories(callback: (NetworkResult<List<Category>>) -> Unit) : Future<*>
+        fun getCategories(callback: (NetworkResult<List<Category>>) -> Unit): Future<*>
 
         fun getCountries(callback: (NetworkResult<List<Country>>) -> Unit): Future<*>
     }
 
     interface Firebase {
-        fun addFavoriteMovieToFirebase(userId: String, movie: MovieFirebaseEntity, onComplete: (Boolean) -> Unit)
-        fun removeFavoriteMovieFromFirebase(userId: String, movieId: String, onComplete: (Boolean) -> Unit)
-        fun getFavoriteMoviesFromFirebase(userId: String, onResult: (List<MovieFirebaseEntity>) -> Unit)
-        fun addSearchKeywordToFirebase(userId: String, keyword: String, onComplete: (Boolean) -> Unit)
-        fun getRecentSearchKeywordsFromFirebase(userId: String, limit: Long = 10, onResult: (List<String>) -> Unit)
+        fun addFavoriteMovieToFirebase(
+            userId: String,
+            movie: MovieFirebaseEntity,
+            onComplete: (Boolean) -> Unit
+        )
+
+        fun removeFavoriteMovieFromFirebase(
+            userId: String,
+            movieId: String,
+            onComplete: (Boolean) -> Unit
+        )
+
+        fun getFavoriteMoviesFromFirebase(
+            userId: String,
+            onResult: (List<MovieFirebaseEntity>) -> Unit
+        )
+
+        fun addSearchKeywordToFirebase(
+            userId: String,
+            keyword: String,
+            onComplete: (Boolean) -> Unit
+        )
+
+        fun getRecentSearchKeywordsFromFirebase(
+            userId: String,
+            limit: Long = 10,
+            onResult: (List<String>) -> Unit
+        )
     }
 }

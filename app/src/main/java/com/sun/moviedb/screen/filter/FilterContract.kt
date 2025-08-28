@@ -30,6 +30,7 @@ interface FilterContract {
             year: String?,
             page: Int = 1
         )
+
         fun clearFilters()
         fun loadMoreResults()
         val currentPage: Int

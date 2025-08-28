@@ -32,14 +32,14 @@
     <string name="search">Search...</string>
 
     <string name="default_web_client_id">150266753810-jr9i7iq2s50ko3br9l7ehu12bsqvdfld.apps.googleusercontent.com</string>
-    <string name="login_with_google">Login with Google</string>
+    <string name="login_with_google">Đăng nhập bằng Google</string>
     <string name="login">Login</string>
     <string name="movie_db">Movie DB</string>
     <string name="invite_to_watch_party">GỬI LỜI MỜI TỚI BẠN BÈ</string>
     <string name="search_for_people">Tìm kiếm </string>
     <string name="invite">Gửi</string>
-    <string name="no_users_found">No User Found</string>
-    <string name="choose_a_friend">Choose A Friend</string>
+    <string name="no_users_found">Không tìm thấy người dùng</string>
+    <string name="choose_a_friend">Chọn một bạn bè</string>
     <string name="dummy_button">Dummy Button</string>
     <string name="dummy_content">DUMMY\nCONTENT</string>
     <string name="watch_with_friends">Xem cùng bạn bè</string>
@@ -51,6 +51,10 @@
     <string name="title_description">Mô tả</string>
     <string name="title_member">THÀNH VIÊN</string>
     <string name="out_room">Rời phòng</string>
-    <string name="title_notification">Notification</string>
+    <string name="title_notification">Thông báo</string>
+    <string name="favorite_movie">Phim Yêu Thích</string>
+    <string name="sign_out">Đăng xuất</string>
+    <string name="sign_out_success">Đăng xuất thành công</string>
+    <string name="sign_out_failed">Đăng xuất thất bại, hãy thử lại!</string>
+    <string name="profile_avatar">Profile avatar</string>
 </resources>
-

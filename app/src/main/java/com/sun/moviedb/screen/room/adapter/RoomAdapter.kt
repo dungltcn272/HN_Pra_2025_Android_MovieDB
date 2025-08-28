@@ -46,7 +46,7 @@ class RoomAdapter(
     override fun onBindViewHolder(holder: ViewHolder, position: Int) {
         val item = items[position]
         holder.binding.tvMemberName.text = item.memberName
-        holder.binding.tvRole.text = if (item.isHost) "Host" else "Member"
+        holder.binding.tvRole.text = if (item.isHost) "Chủ phòng" else "Khách"
         holder.binding.btnRemoveMember.visibility =
             if (item.isHost || (item.memberId == UserSession.userId)) ViewGroup.GONE else ViewGroup.VISIBLE
         if (item.linkAvatar.isNotEmpty()) {

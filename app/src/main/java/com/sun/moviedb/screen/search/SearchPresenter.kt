@@ -59,6 +59,7 @@ class SearchPresenter(
                         view?.showSearchResults(currentMovies.toList())
                     }
                 }
+
                 is NetworkResult.OnError -> {
                     view?.showError(result.message)
                 }

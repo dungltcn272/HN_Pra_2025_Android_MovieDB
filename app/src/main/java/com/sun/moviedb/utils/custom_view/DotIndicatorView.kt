@@ -8,11 +8,11 @@ import android.util.AttributeSet
 import android.view.View
 import android.view.animation.DecelerateInterpolator
 import androidx.core.content.ContextCompat
+import androidx.core.content.withStyledAttributes
+import androidx.recyclerview.widget.RecyclerView
 import androidx.viewpager2.widget.ViewPager2
 import com.sun.moviedb.R
 import kotlin.math.max
-import androidx.core.content.withStyledAttributes
-import androidx.recyclerview.widget.RecyclerView
 
 class DotIndicatorView @JvmOverloads constructor(
     context: Context,
@@ -63,9 +63,13 @@ class DotIndicatorView @JvmOverloads constructor(
     override fun onMeasure(widthMeasureSpec: Int, heightMeasureSpec: Int) {
         val defaultSidePadding = dpToPx(8f)
         val extraEdge = dotRadiusPx * (activeScale - 1)
-        val w = (count * 2 * dotRadiusPx) + ((count - 1).coerceAtLeast(0) * dotSpacingPx) + defaultSidePadding * 2 + extraEdge * 2
+        val w =
+            (count * 2 * dotRadiusPx) + ((count - 1).coerceAtLeast(0) * dotSpacingPx) + defaultSidePadding * 2 + extraEdge * 2
         val h = paddingTop + paddingBottom + (dotRadiusPx * activeScale * 2)
-        setMeasuredDimension(resolveSize(w.toInt(), widthMeasureSpec), resolveSize(h.toInt(), heightMeasureSpec))
+        setMeasuredDimension(
+            resolveSize(w.toInt(), widthMeasureSpec),
+            resolveSize(h.toInt(), heightMeasureSpec)
+        )
     }
 
     override fun onDraw(canvas: Canvas) {
@@ -140,6 +144,7 @@ class DotIndicatorView @JvmOverloads constructor(
                 setCount(viewPager2.adapter?.itemCount ?: 0)
                 setCurrent(viewPager2.currentItem, false)
             }
+
             override fun onItemRangeInserted(positionStart: Int, itemCount: Int) = onChanged()
             override fun onItemRangeRemoved(positionStart: Int, itemCount: Int) = onChanged()
         }

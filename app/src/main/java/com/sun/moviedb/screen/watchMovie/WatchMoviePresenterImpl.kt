@@ -1,226 +1,225 @@
 package com.sun.moviedb.screen.watchMovie
 
-import android.content.Context
-import android.net.Uri
 import android.os.Bundle
 import android.util.Log
-import androidx.annotation.OptIn
 import androidx.media3.common.MediaItem
-import androidx.media3.common.PlaybackException
-import androidx.media3.common.Player
-import androidx.media3.common.util.UnstableApi
-import androidx.media3.datasource.DefaultHttpDataSource
 import androidx.media3.exoplayer.ExoPlayer
-import androidx.media3.exoplayer.hls.HlsMediaSource
+import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.database.FirebaseDatabase
 import com.sun.moviedb.data.model.Member
-import com.sun.moviedb.data.repository.rtdb.MemberRepository
-import com.sun.moviedb.data.repository.source.remote.NetworkResult
-import com.sun.moviedb.utils.MemberListener
-import com.sun.moviedb.utils.session.RoomSession
+import com.sun.moviedb.data.repository.ControllerRepository
+import com.sun.moviedb.data.repository.impl.ControllerRepositoryImpl
+import com.sun.moviedb.data.repository.rtdb.member.MemberRepository
+import com.sun.moviedb.utils.CommandStringParser
+import com.sun.moviedb.utils.CommandType
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.cancel
+import kotlinx.coroutines.flow.catch
+import kotlinx.coroutines.flow.collectLatest
+import kotlinx.coroutines.flow.mapNotNull
+import kotlinx.coroutines.launch
 
-@OptIn(UnstableApi::class)
 class WatchMoviePresenterImpl(
-    private val contextProvider: () -> Context,
-    private val memberRepository: MemberRepository
+    private val contextProvider: () -> WatchMovieActivity?, // For context if absolutely needed
+    private val memberRepository: MemberRepository,
+    // Inject ControllerRepository and FirebaseAuth for testability
+    private val controllerRepository: ControllerRepository = ControllerRepositoryImpl(FirebaseDatabase.getInstance()),
+    private val firebaseAuth: FirebaseAuth = FirebaseAuth.getInstance()
 ) : WatchMovieContract.Presenter {
 
     private var view: WatchMovieContract.View? = null
-    private var exoPlayer: ExoPlayer? = null
+    private var player: ExoPlayer? = null
+    private var m3u8Link: String? = null
+    private var currentRoomId: String? = null
+    private val TAG = "WatchMoviePresenter"
 
-    private var currentM3u8Link: String? = null
-    private var playbackPosition = 0L
-    private var playWhenReady = true
+    // --- Controller Sync Logic Properties ---
+    private var currentUserId: String? = null
+    private var commandListenerJob: Job? = null
+    private val presenterScope = CoroutineScope(Dispatchers.Main + SupervisorJob())
+    private var isProcessingRemoteCommand = false
 
-    private var isPlayerPrepared = false
-    private var isSurfaceReady = false
-
-    private val cachedMembers = mutableListOf<Member>()
-    private var roomId: String? = null
-
-    private var observingRoomId: String? = null
-    private var isListening = false
 
     override fun attachView(view: WatchMovieContract.View) {
         this.view = view
+        currentUserId = firebaseAuth.currentUser?.uid
     }
 
     override fun detachView() {
-        releaseActualPlayer()
+        player?.release()
+        player = null
+        stopSyncController() // Ensure controller listener is stopped
+        presenterScope.cancel() // Cancel presenter's coroutine scope
         this.view = null
     }
 
-    override fun onActivityCreated(m3u8Link: String?, savedPlaybackPosition: Long, savedPlayWhenReady: Boolean) {
-        currentM3u8Link = m3u8Link
-        playbackPosition = savedPlaybackPosition
-        playWhenReady = savedPlayWhenReady
-
-        if (currentM3u8Link == null) {
+    override fun onActivityCreated(
+        m3u8Link: String?,
+        initialPlaybackPosition: Long,
+        initialPlayWhenReady: Boolean
+    ) {
+        this.m3u8Link = m3u8Link
+        if (m3u8Link.isNullOrEmpty()) {
             view?.showPlayerError("No video link provided.")
-            view?.popView()
-            return
-        }
-    }
-
-    override fun onStart() {
-        view?.enterFullscreenMode()
-        initializeActualPlayer()
-    }
-
-    override fun onResume() {
-        view?.enterFullscreenMode()
-        if (exoPlayer == null) {
-            initializeActualPlayer()
-        } else {
-            exoPlayer?.playWhenReady = playWhenReady
-        }
-    }
-
-    override fun onPause(currentPosition: Long, currentPlayWhenReady: Boolean) {
-        this.playbackPosition = currentPosition
-        this.playWhenReady = currentPlayWhenReady
-        exoPlayer?.playWhenReady = false
-    }
-
-    override fun onStop() {
-        releaseActualPlayer()
-        view?.exitFullscreenMode()
-    }
-
-    private fun initializeActualPlayer() {
-        if (exoPlayer != null) {
-            if (!isPlayerPrepared) setupPlayerAndMediaSource()
-            return
-        }
-        if (currentM3u8Link == null) {
-            Log.e("WatchMoviePresenter", "Attempted to initialize player with null M3U8 link.")
-            view?.showPlayerError("Video link is missing.")
-            view?.popView()
             return
         }
 
-        try {
-            exoPlayer = ExoPlayer.Builder(contextProvider())
-                .build()
-                .also { player ->
-                    view?.initializePlayerView(player)
-                    setupPlayerAndMediaSource(player)
-                }
-        } catch (e: Exception) {
-            Log.e("WatchMoviePresenter", "Error initializing ExoPlayer", e)
-            onPlayerError("Could not initialize video player.")
-        }
-    }
-
-    private fun setupPlayerAndMediaSource(player: ExoPlayer? = exoPlayer) {
-        player?.let { activePlayer ->
-            try {
-                val dataSourceFactory = DefaultHttpDataSource.Factory()
-                val hlsMediaSource = HlsMediaSource.Factory(dataSourceFactory)
-                    .createMediaSource(MediaItem.fromUri(Uri.parse(currentM3u8Link!!)))
-
-                activePlayer.setMediaSource(hlsMediaSource)
-                activePlayer.playWhenReady = playWhenReady
-                activePlayer.seekTo(playbackPosition)
-                activePlayer.addListener(object : Player.Listener {
-                    override fun onPlayerError(error: PlaybackException) {
-                        super.onPlayerError(error)
-//                        this.onPlayerError(error.message ?: "Unknown player error")
-                        isPlayerPrepared = false
-                    }
-
-                    fun onPlaybackStateChanged(playbackState: Int, playWhenReady: Boolean) {
-                        super.onPlaybackStateChanged(playbackState)
-                        if (playbackState == Player.STATE_READY) isPlayerPrepared = true
-                        this.onPlaybackStateChanged(playbackState, activePlayer.playWhenReady)
-                    }
-                })
-                activePlayer.prepare()
-                isPlayerPrepared = false
-            } catch (e: Exception) {
-                Log.e("WatchMoviePresenter", "Error setting up media source or preparing player", e)
-                onPlayerError("Could not load video: ${e.localizedMessage}")
-                isPlayerPrepared = false
+        contextProvider()?.let { context ->
+            player = ExoPlayer.Builder(context).build().also { exoPlayer ->
+                val mediaItem = MediaItem.fromUri(m3u8Link)
+                exoPlayer.setMediaItem(mediaItem)
+                exoPlayer.seekTo(initialPlaybackPosition)
+                exoPlayer.playWhenReady = initialPlayWhenReady
+                exoPlayer.prepare()
+                view?.initializePlayerView(exoPlayer)
             }
         }
-    }
-
-    private fun releaseActualPlayer() {
-        exoPlayer?.let {
-
-            this.playbackPosition = it.currentPosition
-            this.playWhenReady = it.playWhenReady
-            it.release()
-            exoPlayer = null
-            isPlayerPrepared = false
-        }
-        view?.releasePlayerView()
     }
 
     override fun onSaveInstanceStateRequested(): Bundle {
-        val outState = Bundle()
-        outState.putLong("playbackPosition", exoPlayer?.currentPosition ?: playbackPosition)
-        outState.putBoolean("playWhenReady", exoPlayer?.playWhenReady ?: playWhenReady)
-        return outState
+
+        return Bundle()
     }
 
-    override fun onPlayerError(errorMessage: String) {
-        view?.showPlayerError(errorMessage)
+    override fun onStart() {
+
     }
 
-    override fun onPlaybackStateChanged(playbackState: Int, playWhenReady: Boolean) {
+    override fun onResume() {
 
-        if (playbackState == Player.STATE_ENDED) {
-        }
     }
 
-    override fun observeMembers(roomId: String) {
-        if (isListening && observingRoomId == roomId) {
-            // đã attach rồi, bỏ qua
-            return
-        }
-        observingRoomId = roomId
-        isListening = true
+    override fun onPause(currentPosition: Long, playWhenReady: Boolean) {
 
-        memberRepository.listenMemberChanged(roomId){ result ->
-            when(result){
-                is MemberListener.OnError -> view?.showPlayerError(result.message)
-                is MemberListener.OnJoin<Member> -> view?.showAddedMember(result.data.memberName)
-                is MemberListener.OnLeave<Member> -> view?.showLeftMember(result.data.memberName)
-                is MemberListener.onListChanged<Member> -> {
-                    cachedMembers.clear()
-                    cachedMembers.addAll(result.data)
-                    view?.updateMemberList(result.data)
-                }
-            }
-        }
     }
 
-    override fun getCachedMembers(): List<Member> = cachedMembers
+    override fun onStop() {
 
-    override fun removeChoosenMember(
-        roomId: String,
-        member: Member
-    ) {
-        memberRepository.removeMember(roomId, member.memberId) { result ->
-            when (result) {
-                is NetworkResult.OnError -> view?.showPlayerError(result.message)
-                is NetworkResult.OnSuccess<Unit> -> {
-                    view?.showLeftMember("Removed member: ${member.memberName}")
-                }
-            }
-        }
     }
 
     override fun updateRoomId(roomId: String) {
-        this.roomId = roomId
-        RoomSession.updateRoomId(roomId)
+
     }
 
-    override fun removeMemberListener(roomId: String) {
-        memberRepository.removeChildEventListener(roomId)
-        memberRepository.removeValueEventListener(roomId)
+    override fun observeMembers(roomId: String) {
 
-        isListening = false
-        observingRoomId = null
+    }
+
+    override fun onMemberClicked(member: Member) {
+
+    }
+
+    override fun onSearchUserClicked() {
+
+    }
+
+    override fun onInviteUserToRoom(userId: String) {
+
+    }
+
+    override fun initializeSyncController(roomId: String?) {
+        this.currentRoomId = roomId
+        if (currentRoomId.isNullOrBlank()) {
+            Log.e(TAG, "Room ID is null or blank. Cannot initialize sync controller.")
+            view?.showSyncError("Invalid Room ID for sync.")
+            return
+        }
+        if (currentUserId.isNullOrBlank()) {
+            Log.w(TAG, "User not logged in. Sync features may be limited.")
+        }
+        startListeningForCommands()
+    }
+
+    private fun startListeningForCommands() {
+        val roomId = currentRoomId ?: return
+        commandListenerJob?.cancel()
+        commandListenerJob = presenterScope.launch {
+            controllerRepository.listenForRoomCommandString(roomId)
+                .mapNotNull { CommandStringParser.parseCommandString(it) }
+                .catch { exception ->
+                    Log.e(TAG, "Error collecting/parsing room commands for $roomId", exception)
+                    view?.showSyncError("Error receiving sync commands.")
+                }
+                .collectLatest { parsedCommand ->
+                    Log.i(TAG, "Presenter received command: $parsedCommand")
+                    processReceivedCommand(parsedCommand)
+                }
+        }
+        Log.d(TAG, "Presenter started listening for commands in room: $roomId")
+    }
+
+    override fun stopSyncController() {
+        commandListenerJob?.cancel()
+        commandListenerJob = null
+        Log.d(TAG, "Presenter stopped listening for commands.")
+    }
+
+    private fun processReceivedCommand(parsedCommand: CommandStringParser.ParsedCommand) {
+        if (parsedCommand.senderId == currentUserId && isProcessingRemoteCommand) {
+            // Avoid loop if we just sent this and player event triggered another send.
+            // More robust check might be needed.
+            Log.d(TAG, "Skipping own command that might be a loop: ${parsedCommand.type}")
+            return
+        }
+
+        isProcessingRemoteCommand = true
+        presenterScope.launch {
+            try {
+                when (parsedCommand.type) {
+                    CommandType.PLAY -> view?.executeRemotePlay()
+                    CommandType.PAUSE -> view?.executeRemotePause()
+                    CommandType.SEEK -> {
+                        parsedCommand.value?.toLongOrNull()?.let { timeMillis ->
+                            view?.executeRemoteSeek(timeMillis)
+                        }
+                    }
+                    else -> Log.w(TAG, "Presenter received unknown command type: ${parsedCommand.type}")
+                }
+            } finally {
+                kotlinx.coroutines.delay(100)
+                isProcessingRemoteCommand = false
+            }
+        }
+    }
+
+    private fun sendCommandToFirebase(commandType: String, value: String? = null) {
+        val roomId = currentRoomId
+        val sender = currentUserId
+        if (roomId.isNullOrBlank() || sender.isNullOrBlank()) {
+            Log.w(TAG, "Cannot send command. Room/Sender ID blank. Room: $roomId, Sender: $sender")
+            return
+        }
+
+        val commandString = CommandStringParser.createCommandString(type = commandType, senderId = sender, value = value)
+        presenterScope.launch {
+            val result = controllerRepository.sendRoomCommandString(roomId, commandString)
+            result.onSuccess {
+                Log.i(TAG, "Presenter sent command '$commandString' to room $roomId.")
+            }.onFailure { exception ->
+                Log.e(TAG, "Presenter failed to send command '$commandString'", exception)
+                view?.showSyncError("Failed to send sync command.")
+            }
+        }
+    }
+
+    override fun onLocalPlayerPlayAction() {
+        if (isProcessingRemoteCommand) return
+        Log.d(TAG, "Presenter: Local PLAY action received")
+        sendCommandToFirebase(CommandType.PLAY)
+    }
+
+    override fun onLocalPlayerPauseAction() {
+        if (isProcessingRemoteCommand) return
+        Log.d(TAG, "Presenter: Local PAUSE action received")
+        sendCommandToFirebase(CommandType.PAUSE)
+    }
+
+    override fun onLocalPlayerSeekAction(positionMs: Long) {
+        if (isProcessingRemoteCommand) return
+        Log.d(TAG, "Presenter: Local SEEK action to $positionMs received")
+        sendCommandToFirebase(CommandType.SEEK, positionMs.toString())
     }
 }

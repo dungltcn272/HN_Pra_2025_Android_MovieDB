@@ -41,8 +41,8 @@ class MainActivity : BaseActivity<ActivityMainBinding>() {
                     AppNavigator.navigateTo(NavDestination.NotificationScreen)
                     true
                 }
-                R.id.nav_settings -> {
-                    AppNavigator.navigateTo(NavDestination.SettingsScreen)
+                R.id.nav_favorite -> {
+                    AppNavigator.navigateTo(NavDestination.FavoriteMovieScreen)
                     true
                 }
                 else -> false

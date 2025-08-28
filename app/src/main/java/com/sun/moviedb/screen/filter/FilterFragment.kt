@@ -15,8 +15,8 @@ import com.sun.moviedb.data.model.Country
 import com.sun.moviedb.data.model.Item
 import com.sun.moviedb.databinding.FragmentFilterBinding
 import com.sun.moviedb.screen.filter.adapter.FilterMovieAdapter
-import com.sun.moviedb.utils.base.BaseFragment
 import com.sun.moviedb.utils.LanguageMapper
+import com.sun.moviedb.utils.base.BaseFragment
 import com.sun.moviedb.utils.navigation.AppNavigator
 import com.sun.moviedb.utils.navigation.NavDestination
 

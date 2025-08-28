@@ -13,12 +13,9 @@ import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.FirebaseUser
 import com.google.firebase.auth.GoogleAuthProvider
 import com.google.firebase.firestore.FirebaseFirestore
-import com.google.firebase.firestore.SetOptions
-import com.google.type.Date
 import com.sun.moviedb.R
 import com.sun.moviedb.data.model.User
 import kotlinx.coroutines.tasks.await
-import kotlin.io.path.exists
 
 class AuthRepositoryImpl(private val context: Context) : AuthRepository {
 
@@ -77,9 +74,15 @@ class AuthRepositoryImpl(private val context: Context) : AuthRepository {
                     profileImageUrl = firebaseUser.photoUrl?.toString()
                 )
                 userDocumentRef.set(newUser).await()
-                Log.d(TAG, "New user added to Firestore with UID: ${firebaseUser.uid} and document field id: ${newUser.id}")
+                Log.d(
+                    TAG,
+                    "New user added to Firestore with UID: ${firebaseUser.uid} and document field id: ${newUser.id}"
+                )
             } else {
-                Log.d(TAG, "User with UID: ${firebaseUser.uid} already exists in Firestore. No action taken to add.")
+                Log.d(
+                    TAG,
+                    "User with UID: ${firebaseUser.uid} already exists in Firestore. No action taken to add."
+                )
             }
         } catch (e: Exception) {
             Log.e(TAG, "Error checking/adding user in Firestore for UID: ${firebaseUser.uid}", e)
@@ -91,6 +94,7 @@ class AuthRepositoryImpl(private val context: Context) : AuthRepository {
             firebaseAuth.signOut()
             googleSignInClient.signOut().await()
             Result.success(Unit)
+
         } catch (e: Exception) {
             Result.failure(e)
         }

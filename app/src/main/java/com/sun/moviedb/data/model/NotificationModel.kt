@@ -20,9 +20,9 @@ sealed class NotificationModel {
         val senderId: String = "",
         val senderName: String = "",
         val senderAvatar: String = "",
-        val movieId: String = "",
-        val movieSlug: String = "",
-        ) : NotificationModel()
+        val movieName: String = "",
+        val movieLink: String = "",
+    ) : NotificationModel()
 
     data class System(
         override val id: String = "",

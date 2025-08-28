@@ -7,19 +7,23 @@ import android.os.Bundle
 import android.util.Log
 import android.view.View
 import android.widget.Toast
+import androidx.core.view.ViewCompat
 import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.WindowInsetsControllerCompat
 import androidx.fragment.app.Fragment
+import androidx.lifecycle.lifecycleScope
 import androidx.media3.common.Player
 import androidx.media3.ui.PlayerView
 import com.sun.moviedb.data.model.Member
-import com.sun.moviedb.databinding.ActivityWatchMovieBinding // Changed from Fragment binding
+import com.sun.moviedb.databinding.ActivityWatchMovieBinding
 import com.sun.moviedb.screen.chat.ChatFragment
 import com.sun.moviedb.screen.room.RoomFragment
 import com.sun.moviedb.screen.searchUser.SearchUserFragment
 import com.sun.moviedb.utils.AppLocator
 import com.sun.moviedb.utils.base.BaseActivity
+import com.sun.moviedb.utils.session.RoomSession
+import kotlinx.coroutines.launch
 
 class WatchMovieActivity : BaseActivity<ActivityWatchMovieBinding>(), WatchMovieContract.View {
 
@@ -33,6 +37,8 @@ class WatchMovieActivity : BaseActivity<ActivityWatchMovieBinding>(), WatchMovie
     private var isFragmentVisible = false
     private var roomId: String? = null
     private val TAG = "WatchMovieActivity"
+
+    private var isPlayerInternallyChanging = false
 
     companion object {
         private const val ARG_M3U8_LINK = "m3u8_link"
@@ -59,10 +65,8 @@ class WatchMovieActivity : BaseActivity<ActivityWatchMovieBinding>(), WatchMovie
         presenter.attachView(this)
 
         roomId = intent.getStringExtra(ARG_ROOM_ID)
-
         m3u8Link = intent.getStringExtra(ARG_M3U8_LINK)
-//        m3u8Link =
-//            "https://devstreaming-cdn.apple.com/videos/streaming/examples/bipbop_16x9/bipbop_16x9_variant.m3u8"
+        RoomSession.updateMovieLink(m3u8Link ?: "")
 
         if (intent.extras != null && intent.extras!!.containsKey(SAVED_PLAYBACK_POSITION)) {
             initialPlaybackPosition = intent.extras!!.getLong(SAVED_PLAYBACK_POSITION, 0L)
@@ -76,66 +80,114 @@ class WatchMovieActivity : BaseActivity<ActivityWatchMovieBinding>(), WatchMovie
         onChatButtonClicked()
         synchronizeButtonWithPlayerState()
         showOrHideFragment()
-    }
-
-    override fun onSaveInstanceState(outState: Bundle) {
-        val stateBundle = presenter.onSaveInstanceStateRequested()
-        outState.putLong(
-            SAVED_PLAYBACK_POSITION,
-            stateBundle.getLong(SAVED_PLAYBACK_POSITION, initialPlaybackPosition)
-        )
-        outState.putBoolean(
-            SAVED_PLAY_WHEN_READY,
-            stateBundle.getBoolean(SAVED_PLAY_WHEN_READY, initialPlayWhenReady)
-        )
-        super.onSaveInstanceState(outState)
-    }
-
-    override fun onRestoreInstanceState(savedInstanceState: Bundle) {
-        super.onRestoreInstanceState(savedInstanceState)
-        initialPlaybackPosition = savedInstanceState.getLong(SAVED_PLAYBACK_POSITION, 0L)
-        initialPlayWhenReady = savedInstanceState.getBoolean(SAVED_PLAY_WHEN_READY, true)
-    }
-
-    override fun onStart() {
-        super.onStart()
-        presenter.onStart()
-        roomId?.let {
-            presenter.updateRoomId(it)
-            presenter.observeMembers(it)
+        requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_SENSOR_LANDSCAPE
+        WindowCompat.setDecorFitsSystemWindows(window, false) // Key line for going edge-to-edge
+        WindowInsetsControllerCompat(window, binding.playerView).let { controller ->
+            controller.hide(WindowInsetsCompat.Type.systemBars()) // Hides status and navigation bars
+            controller.systemBarsBehavior =
+                WindowInsetsControllerCompat.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
         }
+        supportActionBar?.hide()
     }
 
-    override fun onResume() {
-        super.onResume()
-        presenter.onResume()
-    }
+    private var lastReportedIsPlayingToPresenter = false
+    private var lastReportedSeekPositionToPresenter = -1L
 
-    override fun onPause() {
-        super.onPause()
-        val currentPosition = binding.playerView.player?.currentPosition ?: initialPlaybackPosition
-        val currentPlayWhenReady = binding.playerView.player?.playWhenReady ?: initialPlayWhenReady
-        presenter.onPause(currentPosition, currentPlayWhenReady)
-    }
+    private val localPlayerListener = object : Player.Listener {
+        override fun onPlayWhenReadyChanged(playWhenReady: Boolean, reason: Int) {
+            if (isPlayerInternallyChanging) return
 
-    override fun onStop() {
-        super.onStop()
-//        presenter.removeMemberListener(roomId ?: return)
-        presenter.onStop()
-    }
+            if (reason == Player.PLAY_WHEN_READY_CHANGE_REASON_USER_REQUEST) {
+                if (playWhenReady && !lastReportedIsPlayingToPresenter) {
+                    Log.d(TAG, "View: Local PLAY action")
+                    presenter.onLocalPlayerPlayAction()
+                    lastReportedIsPlayingToPresenter = true
+                } else if (!playWhenReady && lastReportedIsPlayingToPresenter) {
+                    Log.d(TAG, "View: Local PAUSE action")
+                    presenter.onLocalPlayerPauseAction()
+                    lastReportedIsPlayingToPresenter = false
+                }
+            }
+        }
 
-    override fun onDestroy() {
-        super.onDestroy()
-        presenter.detachView()
+        override fun onIsPlayingChanged(isPlaying: Boolean) {
+            if (isPlayerInternallyChanging) return
+            binding.playerView.player?.let {
+                if (it.playbackState == Player.STATE_READY) {
+                    if (isPlaying != lastReportedIsPlayingToPresenter) {
+                        lastReportedIsPlayingToPresenter = isPlaying
+                    }
+                }
+            }
+        }
+
+        override fun onPositionDiscontinuity(
+            oldPosition: Player.PositionInfo,
+            newPosition: Player.PositionInfo,
+            reason: Int
+        ) {
+            if (isPlayerInternallyChanging) return
+
+            if (reason == Player.DISCONTINUITY_REASON_SEEK || reason == Player.DISCONTINUITY_REASON_SEEK_ADJUSTMENT) {
+                val currentPos = newPosition.positionMs
+                if (kotlin.math.abs(currentPos - lastReportedSeekPositionToPresenter) > 1000) {
+                    Log.d(TAG, "View: Local SEEK action to $currentPos")
+                    presenter.onLocalPlayerSeekAction(currentPos)
+                    lastReportedSeekPositionToPresenter = currentPos
+                }
+            }
+        }
     }
 
     override fun initializePlayerView(player: Player) {
         binding.playerView.player = player
+        binding.playerView.player?.removeListener(localPlayerListener)
+        binding.playerView.player?.addListener(localPlayerListener)
+        player.playWhenReady = initialPlayWhenReady
+        player.seekTo(initialPlaybackPosition)
+        lastReportedIsPlayingToPresenter = player.isPlaying
+        lastReportedSeekPositionToPresenter = player.currentPosition
     }
 
     override fun releasePlayerView() {
+        binding.playerView.player?.removeListener(localPlayerListener)
         binding.playerView.player?.release()
         binding.playerView.player = null
+    }
+
+    override fun executeRemotePlay() {
+        Log.d(TAG, "View: Executing Remote PLAY")
+        isPlayerInternallyChanging = true
+        binding.playerView.player?.play()
+        lastReportedIsPlayingToPresenter = true
+        lifecycleScope.launch { kotlinx.coroutines.delay(100); isPlayerInternallyChanging = false }
+    }
+
+    override fun executeRemotePause() {
+        Log.d(TAG, "View: Executing Remote PAUSE")
+        isPlayerInternallyChanging = true
+        binding.playerView.player?.pause()
+        lastReportedIsPlayingToPresenter = false
+        lifecycleScope.launch { kotlinx.coroutines.delay(100); isPlayerInternallyChanging = false }
+    }
+
+    override fun executeRemoteSeek(positionMs: Long) {
+        Log.d(TAG, "View: Executing Remote SEEK to $positionMs")
+        val player = binding.playerView.player ?: return
+        if (kotlin.math.abs(player.currentPosition - positionMs) > 1500) {
+            isPlayerInternallyChanging = true
+            player.seekTo(positionMs)
+            lastReportedSeekPositionToPresenter = positionMs
+            lifecycleScope.launch { kotlinx.coroutines.delay(100); isPlayerInternallyChanging = false }
+        }
+    }
+
+    override fun showSyncError(message: String) {
+        Toast.makeText(this, "Sync Error: $message", Toast.LENGTH_SHORT).show()
+    }
+
+    override fun showSyncSuccess(message: String) {
+        Toast.makeText(this, message, Toast.LENGTH_SHORT).show()
     }
 
     override fun showPlayerError(message: String) {
@@ -170,7 +222,11 @@ class WatchMovieActivity : BaseActivity<ActivityWatchMovieBinding>(), WatchMovie
 
     override fun getOriginalOrientation(): Int = this.activityOriginalOrientation
 
-    override fun popView() {
+    override fun popView(data: Bundle?) {
+        if (data != null && data.containsKey("message")) {
+            val message = data.getString("message", "")
+            Toast.makeText(this, message, Toast.LENGTH_SHORT).show()
+        }
         finish()
     }
 
@@ -187,8 +243,66 @@ class WatchMovieActivity : BaseActivity<ActivityWatchMovieBinding>(), WatchMovie
     override fun updateMemberList(members: List<Member>) {
         val roomFragment = supportFragmentManager.findFragmentByTag(ROOM_FRAGMENT_TAG)
         if (roomFragment is RoomFragment) {
-            roomFragment.updateMembers(members) // viết hàm này trong RoomFragment
+            roomFragment.updateMembers(members)
         }
+    }
+
+    override fun onSaveInstanceState(outState: Bundle) {
+        val stateBundle = presenter.onSaveInstanceStateRequested()
+        outState.putLong(
+            SAVED_PLAYBACK_POSITION,
+            stateBundle.getLong(SAVED_PLAYBACK_POSITION, initialPlaybackPosition)
+        )
+        outState.putBoolean(
+            SAVED_PLAY_WHEN_READY,
+            stateBundle.getBoolean(SAVED_PLAY_WHEN_READY, initialPlayWhenReady)
+        )
+        super.onSaveInstanceState(outState)
+    }
+
+    override fun onRestoreInstanceState(savedInstanceState: Bundle) {
+        super.onRestoreInstanceState(savedInstanceState)
+        initialPlaybackPosition = savedInstanceState.getLong(SAVED_PLAYBACK_POSITION, 0L)
+        initialPlayWhenReady = savedInstanceState.getBoolean(SAVED_PLAY_WHEN_READY, true)
+    }
+
+    override fun onStart() {
+        super.onStart()
+        presenter.onStart()
+        roomId?.let { currentRoomId ->
+            if (currentRoomId.isNotBlank()) {
+                presenter.updateRoomId(currentRoomId)
+                presenter.observeMembers(currentRoomId)
+                presenter.initializeSyncController(currentRoomId)
+            }
+        }
+    }
+
+    override fun onResume() {
+        super.onResume()
+        presenter.onResume()
+        binding.playerView.player?.playWhenReady = lastReportedIsPlayingToPresenter
+    }
+
+    override fun onPause() {
+        super.onPause()
+        binding.playerView.player?.let {
+            lastReportedIsPlayingToPresenter = it.playWhenReady
+        }
+        val currentPosition = binding.playerView.player?.currentPosition ?: initialPlaybackPosition
+        val currentPlayWhenReady = binding.playerView.player?.playWhenReady ?: initialPlayWhenReady
+        presenter.onPause(currentPosition, currentPlayWhenReady)
+    }
+
+    override fun onStop() {
+        super.onStop()
+        presenter.onStop()
+        presenter.stopSyncController()
+    }
+
+    override fun onDestroy() {
+        super.onDestroy()
+        presenter.detachView()
     }
 
     private fun showOrHideFragment() {
@@ -233,9 +347,6 @@ class WatchMovieActivity : BaseActivity<ActivityWatchMovieBinding>(), WatchMovie
                 fragment.setWatchPresenter(presenter)
                 toggleFragment(fragment, ROOM_FRAGMENT_TAG)
             }
-            /* *
-            * show RoomFragment
-            * */
             supportFragmentManager.beginTransaction()
                 .replace(binding.containerSearchUser.id, SearchUserFragment())
                 .commit()
@@ -273,19 +384,30 @@ class WatchMovieActivity : BaseActivity<ActivityWatchMovieBinding>(), WatchMovie
     }
 
     private fun hideFragment() {
-        val container = binding.containterRoomChat
+        val container1 = binding.containterRoomChat
+        val container2 = binding.containerSearchUser
         val containerOverlay = binding.containerOverlay
 
-        supportFragmentManager.findFragmentById(container.id)?.let {
-            supportFragmentManager.beginTransaction().remove(it).commit()
+        currentFragmentTag?.let {
+            supportFragmentManager.findFragmentByTag(it)?.let { fragment ->
+                supportFragmentManager.beginTransaction().remove(fragment).commit()
+            }
         }
 
         containerOverlay.visibility = View.GONE
         containerOverlay.isClickable = false
-        container.visibility = View.GONE
+        container1.visibility = View.GONE
+        container2.visibility = View.GONE
 
         currentFragmentTag = null
         isFragmentVisible = false
     }
-}
 
+    override fun showLoading(isLoading: Boolean) {
+
+    }
+
+    override fun showError(message: String) {
+
+    }
+}

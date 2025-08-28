@@ -9,7 +9,7 @@ interface MovieDetailContract {
     interface View : BaseView {
         fun onGetDetailSuccess(movie: Movie, episodes: List<Episode>)
         fun onCheckFavorite(isFavorite: Boolean)
-        fun onMovieToFirebaseSuccess(message : String)
+        fun onMovieToFirebaseSuccess(message: String)
         fun onAddSuccess(message: String)
         fun showLoading2(isLoading: Boolean)
     }
@@ -20,6 +20,7 @@ interface MovieDetailContract {
         fun checkFavorite(movieId: String, userId: String)
         fun createRoom(movie: Movie)
         fun addCurrentMember(roomId: String)
+        fun deleteCurrentMember(roomId: String)
         fun removeMemberListener(roomId: String)
     }
 }

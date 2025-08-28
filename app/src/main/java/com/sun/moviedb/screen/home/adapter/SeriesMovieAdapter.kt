@@ -56,8 +56,11 @@ class SeriesMovieAdapter(
 
     companion object {
         val DIFF_CALLBACK = object : DiffUtil.ItemCallback<Item>() {
-            override fun areItemsTheSame(oldItem: Item, newItem: Item): Boolean = oldItem.id == newItem.id
-            override fun areContentsTheSame(oldItem: Item, newItem: Item): Boolean = oldItem == newItem
+            override fun areItemsTheSame(oldItem: Item, newItem: Item): Boolean =
+                oldItem.id == newItem.id
+
+            override fun areContentsTheSame(oldItem: Item, newItem: Item): Boolean =
+                oldItem == newItem
         }
     }
 }

@@ -2,12 +2,10 @@ package com.sun.moviedb.screen.chat
 
 import android.util.Log
 import android.view.LayoutInflater
-import android.view.View
 import android.view.ViewGroup
 import android.widget.Toast
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.sun.moviedb.data.model.MessageModel
-import com.sun.moviedb.data.model.NotificationModel
 import com.sun.moviedb.data.repository.rtdb.ChatRepository
 import com.sun.moviedb.data.repository.rtdb.ChatRepositoryImpl
 import com.sun.moviedb.databinding.FragmentChatBinding
@@ -35,10 +33,6 @@ class ChatFragment : BaseFragment<FragmentChatBinding>(), ChatContract.View {
     override fun onDestroyView() {
         super.onDestroyView()
         presenter.detachView()
-    }
-
-    override fun initView() {
-        super.initView()
     }
 
     override fun initData() {

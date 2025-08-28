@@ -44,18 +44,19 @@ class HomePresenter(
     override fun loadSeriesMovies(series: String?, page: Int) {
         val mSeries = series ?: currentSeries
         view?.showSeriesMoviesLoading(true)
-        seriesMovieFuture = movieRepository.getSeriesMovie(mSeries, page, DEFAULT_PAGE_SIZE) { result ->
-            view?.showSeriesMoviesLoading(false)
-            when (result) {
-                is NetworkResult.OnSuccess -> view?.showSeriesMovies(
-                    result.data.items,
-                    result.data.pagination.currentPage,
-                    result.data.pagination.totalPages
-                )
+        seriesMovieFuture =
+            movieRepository.getSeriesMovie(mSeries, page, DEFAULT_PAGE_SIZE) { result ->
+                view?.showSeriesMoviesLoading(false)
+                when (result) {
+                    is NetworkResult.OnSuccess -> view?.showSeriesMovies(
+                        result.data.items,
+                        result.data.pagination.currentPage,
+                        result.data.pagination.totalPages
+                    )
 
-                is NetworkResult.OnError -> view?.showError(result.message)
+                    is NetworkResult.OnError -> view?.showError(result.message)
+                }
             }
-        }
     }
 
     override fun selectSeries(series: String) {

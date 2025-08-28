@@ -1,8 +1,15 @@
 package com.sun.moviedb.screen.searchUser
 
 import android.util.Log
+import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.database.FirebaseDatabase
+import com.sun.moviedb.data.model.NotificationModel
 import com.sun.moviedb.data.model.User
 import com.sun.moviedb.data.repository.firestore.UserRepository
+import com.sun.moviedb.data.repository.rtdb.notification.NotificationOperationListener
+import com.sun.moviedb.data.repository.rtdb.notification.NotificationRepository
+import com.sun.moviedb.data.repository.rtdb.notification.NotificationRepositoryImpl
+import com.sun.moviedb.utils.session.RoomSession
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -11,7 +18,10 @@ import kotlinx.coroutines.withContext
 
 class SearchUserPresenterImpl(
     private val userRepository: UserRepository,
-    private val mainScope: CoroutineScope = CoroutineScope(Dispatchers.Main + Job())
+    private val mainScope: CoroutineScope = CoroutineScope(Dispatchers.Main + Job()),
+    private val notificationRepository: NotificationRepository = NotificationRepositoryImpl(
+        FirebaseAuth.getInstance(), FirebaseDatabase.getInstance()
+    )
 ) : SearchUserContract.Presenter {
 
     private var view: SearchUserContract.View? = null
@@ -73,7 +83,6 @@ class SearchUserPresenterImpl(
         view?.showLoading()
         mainScope.launch {
             val result = userRepository.searchUsers(query)
-            // ... (rest of searchUsers logic remains the same)
             withContext(Dispatchers.Main) {
                 view?.hideLoading()
                 result.fold(
@@ -120,7 +129,7 @@ class SearchUserPresenterImpl(
     override fun deselectUser(user: User) {
         val removedFromChosen = currentChosenUsers.removeAll { it.id == user.id }
         if (removedFromChosen) {
-            if (!currentSearchableUsers.any { it.id == user.id}) {
+            if (!currentSearchableUsers.any { it.id == user.id }) {
                 currentSearchableUsers.add(0, user)
             }
 
@@ -142,14 +151,59 @@ class SearchUserPresenterImpl(
 
     override fun onInviteClicked() {
         if (currentChosenUsers.isNotEmpty()) {
-            val userDisplayNames = currentChosenUsers.joinToString { it.username ?: it.email ?: it.id }
-            Log.i(TAG, "Invite button clicked. Chosen users: $userDisplayNames")
-            view?.showError("Invite functionality for: $userDisplayNames (Not implemented yet)")
+            val currentUser = FirebaseAuth.getInstance().currentUser
+            var invitesSuccessfullySent = 0
+            var invitesFailed = 0
+            val totalInvites = currentChosenUsers.size
+            currentChosenUsers.forEach { recipientUser ->
+                val inviteNotification = NotificationModel.Invite(
+                    title = "Lời mời mời tham gia phòng",
+                    body = "${currentUser?.displayName} mời bạn tham gia phòng ${RoomSession.roomName}.",
+                    createAt = System.currentTimeMillis(),
+                    isRead = false,
+                    roomId = RoomSession.roomId!!,
+                    roomName = RoomSession.roomName!!,
+                    senderId = currentUser?.uid ?:"",
+                    senderName = currentUser?.displayName?:"",
+                    senderAvatar = currentUser?.photoUrl.toString(),
+                    movieName = RoomSession.roomName!!,
+                    movieLink = RoomSession.movieLink!!
+                )
+
+                notificationRepository.addNotification(
+                    recipientUser.id,
+                    inviteNotification,
+                    object : NotificationOperationListener {
+                        override fun onSuccess() {
+                            invitesSuccessfullySent++
+                            Log.d(TAG, "Invite sent successfully to ${recipientUser.username}")
+                            checkAllInvitesProcessed(totalInvites, invitesSuccessfullySent, invitesFailed)
+                        }
+
+                        override fun onError(exception: Exception) {
+                            invitesFailed++
+                            Log.e(TAG, "Failed to send invite to ${recipientUser.username}", exception)
+                            checkAllInvitesProcessed(totalInvites, invitesSuccessfullySent, invitesFailed)
+                        }
+                    }
+                )
+            }
         }
     }
 
     private fun updateInviteButtonState() {
         val count = currentChosenUsers.size
         view?.updateInviteButton(count, count > 0)
+    }
+
+    private fun checkAllInvitesProcessed(total: Int, success: Int, failed: Int) {
+        if (success + failed == total) {
+            view?.showSendingInvitesLoading(false)
+            if (failed == 0) {
+                view?.showInviteSentSuccess(success)
+            } else {
+                view?.showInviteSentError("Sent $success invites. Failed to send $failed invites.")
+            }
+        }
     }
 }

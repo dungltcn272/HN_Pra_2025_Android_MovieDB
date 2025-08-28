@@ -1,9 +1,15 @@
 package com.sun.moviedb.data.repository.source.remote.parse
 
+import com.sun.moviedb.data.model.Category
+import com.sun.moviedb.data.model.Country
+import com.sun.moviedb.data.model.Episode
+import com.sun.moviedb.data.model.Item
+import com.sun.moviedb.data.model.Movie
+import com.sun.moviedb.data.model.Pagination
+import com.sun.moviedb.data.model.ServerData
+import com.sun.moviedb.utils.Constants
 import org.json.JSONArray
 import org.json.JSONObject
-import com.sun.moviedb.data.model.*
-import com.sun.moviedb.utils.Constants
 
 /* *
 * JSON helpers (extensions)

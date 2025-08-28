@@ -4,7 +4,7 @@ import com.sun.moviedb.data.model.MessageModel
 import com.sun.moviedb.data.repository.rtdb.ChatRepository
 import com.sun.moviedb.data.repository.source.remote.NetworkResult
 
-class ChatPresenter (private val chatRepository: ChatRepository) : ChatContract.Presenter{
+class ChatPresenter(private val chatRepository: ChatRepository) : ChatContract.Presenter {
     private var view: ChatContract.View? = null
 
     override fun receiveMessages(roomId: String) {

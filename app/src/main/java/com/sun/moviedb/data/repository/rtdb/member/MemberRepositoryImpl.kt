@@ -1,4 +1,4 @@
-package com.sun.moviedb.data.repository.rtdb
+package com.sun.moviedb.data.repository.rtdb.member
 
 import android.util.Log
 import com.google.firebase.Firebase
@@ -28,7 +28,10 @@ class MemberRepositoryImpl : MemberRepository {
         memberNode.setValue(member)
             .addOnSuccessListener {
                 onResult(NetworkResult.OnSuccess(Unit))
-                Log.d(TAG, "Member added successfully on addMember(): ${member.memberName} (${member.memberId}) into ($roomId)")
+                Log.d(
+                    TAG,
+                    "Member added successfully on addMember(): ${member.memberName} (${member.memberId}) into ($roomId)"
+                )
 
                 /* *
                 * Ensure that the member node is removed if they disconnect
@@ -52,7 +55,12 @@ class MemberRepositoryImpl : MemberRepository {
                 Log.d(TAG, "Member removed successfully: $memberId from ($roomId)")
             }
             .addOnFailureListener { error ->
-                onResult(NetworkResult.OnError(null, error.message ?: "Cannot remove member from ($roomId)"))
+                onResult(
+                    NetworkResult.OnError(
+                        null,
+                        error.message ?: "Cannot remove member from ($roomId)"
+                    )
+                )
                 Log.e(TAG, "Failed to remove member: ($memberId) from ($roomId)", error)
             }
     }
@@ -61,7 +69,7 @@ class MemberRepositoryImpl : MemberRepository {
         roomId: String,
         onResult: (MemberListener<Member>) -> Unit
     ) {
-        val child = object : ChildEventListener{
+        val child = object : ChildEventListener {
             override fun onChildAdded(
                 snapshot: DataSnapshot,
                 previousChildName: String?
@@ -70,11 +78,19 @@ class MemberRepositoryImpl : MemberRepository {
                     snapshot.getValue<Member>()?.let { item ->
                         val memberId = snapshot.key
                         onResult(MemberListener.OnJoin(item))
-                        Log.d(TAG, "New member added on ChildAdded():${item.memberName} ($memberId) from ($roomId)")
+                        Log.d(
+                            TAG,
+                            "New member added on ChildAdded():${item.memberName} ($memberId) from ($roomId)"
+                        )
                     }
 
                 } catch (e: Exception) {
-                    onResult(MemberListener.OnError(null, e.message ?: "Error to load all members from ($roomId)"))
+                    onResult(
+                        MemberListener.OnError(
+                            null,
+                            e.message ?: "Error to load all members from ($roomId)"
+                        )
+                    )
                     Log.e(TAG, "Error receiving members from ($roomId): ${e.message}")
                 }
             }
@@ -84,11 +100,16 @@ class MemberRepositoryImpl : MemberRepository {
             override fun onChildRemoved(snapshot: DataSnapshot) {
                 try {
                     snapshot.getValue<Member>()?.let {
-                        onResult(MemberListener.OnLeave(it ))
+                        onResult(MemberListener.OnLeave(it))
                         Log.d(TAG, "Member left: ${it.memberName} (${it.memberId}) from ($roomId)")
                     }
-                }catch (e: Exception){
-                    onResult(MemberListener.OnError(null, "Failed to parse leaved member data from ($roomId)"))
+                } catch (e: Exception) {
+                    onResult(
+                        MemberListener.OnError(
+                            null,
+                            "Failed to parse leaved member data from ($roomId)"
+                        )
+                    )
                     Log.e(TAG, "Failed to left the member from ($roomId)")
                 }
             }
@@ -98,7 +119,7 @@ class MemberRepositoryImpl : MemberRepository {
             override fun onCancelled(error: DatabaseError) {}
         }
 
-        val value = object : ValueEventListener{
+        val value = object : ValueEventListener {
             override fun onDataChange(snapshot: DataSnapshot) {
                 val list = snapshot.children.mapNotNull { it.getValue(Member::class.java) }
                 onResult(MemberListener.onListChanged(list))
@@ -127,7 +148,7 @@ class MemberRepositoryImpl : MemberRepository {
         }
     }
 
-    companion object{
+    companion object {
         private const val membersPath = "members"
         private const val createAtPath = "createAt"
 

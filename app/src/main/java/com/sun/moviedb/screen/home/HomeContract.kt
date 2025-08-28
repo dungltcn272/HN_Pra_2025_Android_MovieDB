@@ -14,7 +14,7 @@ interface HomeContract {
 
     interface HomePresenter : BasePresenter<HomeView> {
         fun loadNewestMovies()
-        fun loadSeriesMovies(series : String? = null, page : Int = 1)
+        fun loadSeriesMovies(series: String? = null, page: Int = 1)
         val seriesList: List<String>
         fun selectSeries(series: String)
         fun selectPage(page: Int)

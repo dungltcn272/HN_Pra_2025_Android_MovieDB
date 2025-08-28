@@ -7,7 +7,7 @@ import com.sun.moviedb.utils.base.BasePresenter
 import com.sun.moviedb.utils.base.BaseView
 
 interface LoginContract {
-    interface View: BaseView {
+    interface View : BaseView {
         fun showLoginSuccess(firebaseUser: FirebaseUser)
         fun showLoginError(message: String)
         fun navigateToMain()
@@ -15,7 +15,7 @@ interface LoginContract {
         fun showGoogleSignInFailed(message: String)
     }
 
-    interface Presenter: BasePresenter<LoginContract.View> {
+    interface Presenter : BasePresenter<View> {
         fun onLoginButtonClicked()
         fun handleGoogleSignInResult(account: GoogleSignInAccount?, exception: Exception?)
     }
@@ -25,6 +25,10 @@ interface LoginContract {
             fun onAuthSuccess(firebaseUser: FirebaseUser)
             fun onAuthFailure(message: String)
         }
-        suspend fun performGoogleLogin(account: GoogleSignInAccount?, listener: OnAuthFinishedListener)
+
+        suspend fun performGoogleLogin(
+            account: GoogleSignInAccount?,
+            listener: OnAuthFinishedListener
+        )
     }
 }

@@ -17,7 +17,7 @@ class ServerDataListAdapter(
     override fun onCreateViewHolder(
         parent: ViewGroup,
         viewType: Int
-    ): ServerDataListAdapter.ViewHolder {
+    ): ViewHolder {
         context = parent.context
         val binding = ViewholderEpsItemBinding.inflate(
             LayoutInflater.from(context),
@@ -27,13 +27,12 @@ class ServerDataListAdapter(
         return ViewHolder(binding)
     }
 
-    override fun onBindViewHolder(holder: ServerDataListAdapter.ViewHolder, position: Int) {
+    override fun onBindViewHolder(holder: ViewHolder, position: Int) {
         val item = items[position]
         val number = extractString(item.name)
-        if (number != null){
+        if (number != null) {
             holder.binding.tvEpsItem.text = number.toString()
-        }
-        else {
+        } else {
             holder.binding.tvEpsItem.text = item.name
         }
         holder.binding.tvEpsItem.setOnClickListener {
@@ -43,7 +42,7 @@ class ServerDataListAdapter(
 
     override fun getItemCount(): Int = items.size
 
-    private fun extractString (input: String) : Int?{
+    private fun extractString(input: String): Int? {
         val numberString = input.filter { it.isDigit() }
         return numberString.toIntOrNull()
     }

@@ -1,15 +1,15 @@
 package com.sun.moviedb.utils.custom_view
 
+import android.animation.ValueAnimator
 import android.content.Context
 import android.graphics.Canvas
+import android.graphics.Color
 import android.graphics.Paint
 import android.util.AttributeSet
 import android.view.View
-import android.animation.ValueAnimator
-import android.graphics.Color
 import android.view.animation.LinearInterpolator
-import kotlin.math.cos
 import kotlin.math.PI
+import kotlin.math.cos
 
 class WaveDotsLoadingView @JvmOverloads constructor(
     context: Context, attrs: AttributeSet? = null

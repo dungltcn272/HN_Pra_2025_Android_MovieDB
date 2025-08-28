@@ -7,7 +7,7 @@ object UserSession {
     var userName: String? = null
     var linkAvatar: String? = null
 
-    fun updateSession(firebaseUser: FirebaseUser?){
+    fun updateSession(firebaseUser: FirebaseUser?) {
         if (firebaseUser == null)
             return
         userId = firebaseUser.uid

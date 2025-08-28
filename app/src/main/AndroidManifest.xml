@@ -20,9 +20,13 @@
 
         <activity
             android:name=".screen.login.LoginActivity"
+            android:screenOrientation="portrait"
+            tools:ignore="LockedOrientationActivity"
             android:exported="false"/>
         <activity
             android:name=".screen.splash.SplashActivity"
+            android:screenOrientation="portrait"
+            tools:ignore="LockedOrientationActivity"
             android:exported="true">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
@@ -33,10 +37,14 @@
         </activity>
         <activity
             android:name=".screen.MainActivity"
+            android:screenOrientation="portrait"
+            tools:ignore="LockedOrientationActivity"
             android:exported="true" />
 
         <activity
             android:name=".screen.watchMovie.WatchMovieActivity"
+            android:screenOrientation="landscape"
+            tools:ignore="LockedOrientationActivity"
             android:exported="true" />
 
     </application>

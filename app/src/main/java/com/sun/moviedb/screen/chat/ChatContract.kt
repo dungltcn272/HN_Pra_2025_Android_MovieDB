@@ -5,11 +5,11 @@ import com.sun.moviedb.utils.base.BasePresenter
 import com.sun.moviedb.utils.base.BaseView
 
 interface ChatContract {
-    interface View : BaseView{
+    interface View : BaseView {
         fun addMessages(message: MessageModel)
     }
 
-    interface Presenter : BasePresenter<View>{
+    interface Presenter : BasePresenter<View> {
         fun receiveMessages(roomId: String)
         fun sendMessage(roomId: String, message: MessageModel)
     }

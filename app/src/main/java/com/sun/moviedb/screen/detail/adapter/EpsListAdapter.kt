@@ -4,11 +4,9 @@ import android.content.Context
 import android.view.LayoutInflater
 import android.view.ViewGroup
 import androidx.recyclerview.widget.RecyclerView
-import androidx.viewbinding.ViewBinding
 import com.sun.moviedb.data.model.Episode
 import com.sun.moviedb.data.model.ServerData
 import com.sun.moviedb.databinding.ItemSeriesTabBinding
-import com.sun.moviedb.screen.home.adapter.SeriesTabAdapter
 
 class EpsListAdapter(
     private val item: List<Episode>,
@@ -43,7 +41,7 @@ class EpsListAdapter(
     override fun onCreateViewHolder(
         parent: ViewGroup,
         viewType: Int
-    ): EpsListAdapter.ViewHolder {
+    ): ViewHolder {
         this.context = parent.context
         val binding = ItemSeriesTabBinding.inflate(
             LayoutInflater.from(context),
@@ -54,7 +52,7 @@ class EpsListAdapter(
         return ViewHolder(binding)
     }
 
-    override fun onBindViewHolder(holder: EpsListAdapter.ViewHolder, position: Int) {
+    override fun onBindViewHolder(holder: ViewHolder, position: Int) {
         val item = item[position]
         holder.binding.tvTabTitle.text = item.serverName
         holder.binding.tvTabTitle.isSelected = position == selectedPos

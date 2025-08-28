@@ -15,8 +15,11 @@ class SearchHistoryAdapter(
 
     companion object {
         val DIFF_CALLBACK = object : DiffUtil.ItemCallback<String>() {
-            override fun areItemsTheSame(oldItem: String, newItem: String): Boolean = oldItem == newItem
-            override fun areContentsTheSame(oldItem: String, newItem: String): Boolean = oldItem == newItem
+            override fun areItemsTheSame(oldItem: String, newItem: String): Boolean =
+                oldItem == newItem
+
+            override fun areContentsTheSame(oldItem: String, newItem: String): Boolean =
+                oldItem == newItem
         }
     }
 

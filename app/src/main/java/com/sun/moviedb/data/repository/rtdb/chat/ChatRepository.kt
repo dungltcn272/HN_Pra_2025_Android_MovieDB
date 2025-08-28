@@ -3,7 +3,7 @@ package com.sun.moviedb.data.repository.rtdb
 import com.sun.moviedb.data.model.MessageModel
 import com.sun.moviedb.data.repository.source.remote.NetworkResult
 
-interface ChatRepository{
+interface ChatRepository {
     fun sendMessage(
         roomId: String,
         message: MessageModel,

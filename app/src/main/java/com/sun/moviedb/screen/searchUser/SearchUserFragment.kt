@@ -1,13 +1,9 @@
 package com.sun.moviedb.screen.searchUser
 
-import android.annotation.SuppressLint
 import android.content.Context
-import android.graphics.Rect
-import android.os.Bundle
 import android.text.InputType
 import android.util.Log
 import android.view.LayoutInflater
-import android.view.MotionEvent
 import android.view.View
 import android.view.ViewGroup
 import android.view.inputmethod.EditorInfo
@@ -21,7 +17,6 @@ import com.sun.moviedb.databinding.FragmentSearchUserBinding
 import com.sun.moviedb.screen.searchUser.adapter.ChosenUserRecyclerAdapter
 import com.sun.moviedb.screen.searchUser.adapter.SearchUserRecyclerAdapter
 import com.sun.moviedb.utils.base.BaseFragment
-import kotlin.text.contains
 
 class SearchUserFragment : BaseFragment<FragmentSearchUserBinding>(), SearchUserContract.View {
 
@@ -76,7 +71,7 @@ class SearchUserFragment : BaseFragment<FragmentSearchUserBinding>(), SearchUser
         binding.searchTextInputLayout.hint = getString(R.string.search_for_people)
         binding.searchEditText.setOnFocusChangeListener { view, hasFocus ->
             if (hasFocus) {
-                binding.searchTextInputLayout.setHint("")
+                binding.searchTextInputLayout.hint = ""
             } else {
                 binding.searchTextInputLayout.setHint(R.string.search_for_people)
             }
@@ -93,8 +88,12 @@ class SearchUserFragment : BaseFragment<FragmentSearchUserBinding>(), SearchUser
     private fun showSearchInputDialog() {
         val editText = android.widget.EditText(requireContext()).apply {
             hint = getString(R.string.search_for_people)
-            setText(binding.searchEditText.text?.takeIf { it.isNotBlank() && it.toString() != getString(R.string.search_for_people) } ?: "")
-            setSingleLine(true)
+            setText(binding.searchEditText.text?.takeIf {
+                it.isNotBlank() && it.toString() != getString(
+                    R.string.search_for_people
+                )
+            } ?: "")
+            isSingleLine = true
             inputType = InputType.TYPE_CLASS_TEXT
             imeOptions = EditorInfo.IME_ACTION_SEARCH
         }
@@ -145,7 +144,8 @@ class SearchUserFragment : BaseFragment<FragmentSearchUserBinding>(), SearchUser
 
     override fun displaySearchableUsers(users: List<User>) {
         searchUserAdapter.submitList(users)
-        binding.recyclerViewWatchParty.visibility = if (users.isNotEmpty()) View.VISIBLE else View.GONE
+        binding.recyclerViewWatchParty.visibility =
+            if (users.isNotEmpty()) View.VISIBLE else View.GONE
     }
 
     override fun displayChosenUsers(users: List<User>) {
@@ -197,8 +197,25 @@ class SearchUserFragment : BaseFragment<FragmentSearchUserBinding>(), SearchUser
 
     override fun updateInviteButton(count: Int, isEnabled: Boolean) {
         binding.inviteButtonWatchParty.isEnabled = isEnabled
-        binding.inviteButtonWatchParty.text = if (isEnabled && count > 0) "Invite ($count)" else getString(R.string.invite)
+        binding.inviteButtonWatchParty.text =
+            if (isEnabled && count > 0) "Invite ($count)" else getString(R.string.invite)
     }
+
+    override fun showInviteSentSuccess(count: Int) {
+        Toast.makeText(context, "$count invites sent successfully!", Toast.LENGTH_LONG).show()
+    }
+
+    override fun showInviteSentError(message: String) {
+        Toast.makeText(context, "Error sending invites: $message", Toast.LENGTH_LONG).show()
+    }
+
+    override fun showSendingInvitesLoading(isLoading: Boolean) {
+        binding.inviteButtonWatchParty.isEnabled = !isLoading
+        if (isLoading) {
+            binding.inviteButtonWatchParty.text = "Sending..."
+        }
+    }
+
 
     override fun showLoading(isLoading: Boolean) {
         if (isLoading) {
@@ -218,7 +235,8 @@ class SearchUserFragment : BaseFragment<FragmentSearchUserBinding>(), SearchUser
     }
 
     private fun hideKeyboardAndClearFocus(viewToClearFocusFrom: View) {
-        val imm = requireActivity().getSystemService(Context.INPUT_METHOD_SERVICE) as InputMethodManager
+        val imm =
+            requireActivity().getSystemService(Context.INPUT_METHOD_SERVICE) as InputMethodManager
         imm.hideSoftInputFromWindow(viewToClearFocusFrom.windowToken, 0)
         viewToClearFocusFrom.clearFocus()
     }

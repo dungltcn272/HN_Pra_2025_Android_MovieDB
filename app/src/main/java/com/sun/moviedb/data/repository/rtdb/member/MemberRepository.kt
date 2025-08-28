@@ -1,4 +1,4 @@
-package com.sun.moviedb.data.repository.rtdb
+package com.sun.moviedb.data.repository.rtdb.member
 
 import com.sun.moviedb.data.model.Member
 import com.sun.moviedb.data.repository.source.remote.NetworkResult

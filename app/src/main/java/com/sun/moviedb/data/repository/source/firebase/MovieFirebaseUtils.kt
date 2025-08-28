@@ -64,7 +64,10 @@ fun addSearchKeyword(
     keywordRef.document(keyword)
         .set(entity)
         .addOnSuccessListener {
-            keywordRef.orderBy("timestamp", com.google.firebase.firestore.Query.Direction.DESCENDING)
+            keywordRef.orderBy(
+                "timestamp",
+                com.google.firebase.firestore.Query.Direction.DESCENDING
+            )
                 .get()
                 .addOnSuccessListener { snapshot ->
                     val docs = snapshot.documents

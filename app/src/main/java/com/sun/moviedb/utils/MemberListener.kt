@@ -7,6 +7,7 @@ sealed class MemberListener<out T> {
         val code: Int?,
         val message: String
     ) : MemberListener<Nothing>()
+
     data class onListChanged<out T>(
         val data: List<T>
     ) : MemberListener<T>()

@@ -51,16 +51,37 @@
                 app:layout_constraintTop_toTopOf="@+id/btn_search"
                 app:srcCompat="@drawable/ic_business_messages_24" />
 
+            <com.google.android.material.card.MaterialCardView
+                android:id="@+id/avatar_user_image_card"
+                android:layout_width="@dimen/dp_50"
+                android:layout_height="@dimen/dp_50"
+                android:layout_marginTop="@dimen/dp_60"
+                android:layout_marginEnd="@dimen/dp_16"
+                app:cardCornerRadius="@dimen/dp_25"
+                app:cardElevation="0dp"
+                app:strokeWidth="@dimen/dp_2"
+                app:strokeColor="@color/deep_purple"
+                app:layout_constraintEnd_toEndOf="parent"
+                app:layout_constraintTop_toTopOf="parent">
+
+                <ImageView
+                    android:id="@+id/avatar_user_image"
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:scaleType="centerCrop"
+                    tools:src="@drawable/ic_avatar_placeholder" />
+            </com.google.android.material.card.MaterialCardView>
+
             <ImageView
                 android:id="@+id/btn_search"
                 android:layout_width="@dimen/dp_30"
                 android:layout_height="@dimen/dp_30"
                 app:tint="@color/white"
                 android:src="@drawable/ic_search"
-                app:layout_constraintEnd_toEndOf="parent"
-                app:layout_constraintTop_toTopOf="parent"
-                android:layout_marginTop="@dimen/dp_60"
-                android:layout_marginEnd="@dimen/dp_60"/>
+                app:layout_constraintEnd_toStartOf="@id/avatar_user_image_card"
+                app:layout_constraintTop_toTopOf="@id/avatar_user_image_card"
+                app:layout_constraintBottom_toBottomOf="@id/avatar_user_image_card"
+                android:layout_marginEnd="@dimen/dp_12"/>
 
 
             <LinearLayout

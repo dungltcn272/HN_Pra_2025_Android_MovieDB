@@ -12,7 +12,8 @@ import com.sun.moviedb.data.model.MessageModel
 import com.sun.moviedb.databinding.ViewholderChatFrameReceiverBinding
 import com.sun.moviedb.databinding.ViewholderChatFrameSenderBinding
 
-class ChatAdapter (val items: MutableList<MessageModel>) : RecyclerView.Adapter<RecyclerView.ViewHolder>()  {
+class ChatAdapter(val items: MutableList<MessageModel>) :
+    RecyclerView.Adapter<RecyclerView.ViewHolder>() {
     private lateinit var context: Context
 
     override fun getItemViewType(position: Int): Int {
@@ -31,6 +32,7 @@ class ChatAdapter (val items: MutableList<MessageModel>) : RecyclerView.Adapter<
                 val binding = ViewholderChatFrameSenderBinding.inflate(inflater, parent, false)
                 SenderViewHolder(binding)
             }
+
             VIEW_TYPE_RECEIVER -> {
                 val binding = ViewholderChatFrameReceiverBinding.inflate(inflater, parent, false)
                 ReceiverViewHolder(binding)
@@ -55,13 +57,10 @@ class ChatAdapter (val items: MutableList<MessageModel>) : RecyclerView.Adapter<
 
     override fun getItemCount(): Int = items.size
 
-    private fun isSender(position: Int) : Boolean{
+    private fun isSender(position: Int): Boolean {
         val currentUser = FirebaseAuth.getInstance().currentUser
         val uid = currentUser?.uid
-        if (items[position].senderId == uid) {
-            return true
-        }
-        return false
+        return items[position].senderId == uid
     }
 
 
@@ -70,7 +69,7 @@ class ChatAdapter (val items: MutableList<MessageModel>) : RecyclerView.Adapter<
         RecyclerView.ViewHolder(binding.root) {
         fun bind(msg: MessageModel) {
             binding.tvChatSender.text = msg.content
-            if (msg.linkAvt.isNotEmpty()){
+            if (msg.linkAvt.isNotEmpty()) {
                 Glide.with(binding.root.context)
                     .load(msg.linkAvt)
                     .placeholder(R.mipmap.ic_launcher_round)
@@ -86,7 +85,7 @@ class ChatAdapter (val items: MutableList<MessageModel>) : RecyclerView.Adapter<
         RecyclerView.ViewHolder(binding.root) {
         fun bind(msg: MessageModel) {
             binding.tvChatReceiver.text = msg.content
-            if (msg.linkAvt.isNotEmpty()){
+            if (msg.linkAvt.isNotEmpty()) {
                 Glide.with(binding.root.context)
                     .load(msg.linkAvt)
                     .placeholder(R.mipmap.ic_launcher_round)

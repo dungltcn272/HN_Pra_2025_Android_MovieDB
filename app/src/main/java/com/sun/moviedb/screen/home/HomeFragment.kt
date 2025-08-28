@@ -1,11 +1,15 @@
 package com.sun.moviedb.screen.home
 
+import android.util.Log
 import android.view.LayoutInflater
 import android.view.ViewGroup
 import android.widget.Toast
 import androidx.recyclerview.widget.GridLayoutManager
 import androidx.recyclerview.widget.LinearLayoutManager
+import com.bumptech.glide.Glide
+import com.google.firebase.auth.FirebaseAuth
 import com.sun.moviedb.MyApp
+import com.sun.moviedb.R
 import com.sun.moviedb.utils.base.BaseFragment
 import com.sun.moviedb.databinding.FragmentHomeBinding
 import com.sun.moviedb.data.model.Item
@@ -34,13 +38,29 @@ class HomeFragment : BaseFragment<FragmentHomeBinding>(), HomeContract.HomeView 
         setupSeriesTabAdapter()
         setupSeriesMovieAdapter()
         setupSearchClick()
-
+        setupUserInteraction()
     }
 
     private fun onMessageClick() {
         binding.btnMessage.setOnClickListener {
             AppNavigator.navigateTo(NavDestination.ChatScreen, addToBackStack = true)
             Toast.makeText(requireContext(), "Message clicked", Toast.LENGTH_SHORT).show()
+        }
+    }
+
+    private fun setupUserInteraction() {
+        val userAvatarUrl = FirebaseAuth.getInstance().currentUser?.photoUrl
+        if (userAvatarUrl != null) {
+            binding.avatarUserImage.apply {
+                Glide.with(this)
+                    .load(userAvatarUrl)
+                    .placeholder(R.drawable.ic_avatar_placeholder)
+                    .error(R.drawable.ic_avatar_placeholder)
+                    .into(this)
+            }
+        }
+        binding.avatarUserImage.setOnClickListener {
+            AppNavigator.navigateTo(NavDestination.ProfileScreen, addToBackStack = true)
         }
     }
 

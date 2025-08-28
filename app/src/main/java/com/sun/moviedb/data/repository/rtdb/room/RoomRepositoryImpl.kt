@@ -1,4 +1,4 @@
-package com.sun.moviedb.data.repository.rtdb
+package com.sun.moviedb.data.repository.rtdb.room
 
 import android.util.Log
 import com.google.firebase.Firebase
@@ -14,7 +14,7 @@ import com.sun.moviedb.utils.session.RoomSession
 class RoomRepositoryImpl : RoomRepository {
 
     private val roomRef = Firebase.database.reference.child(roomsPath)
-    private var roomListener : ValueEventListener? = null
+    private var roomListener: ValueEventListener? = null
     private val TAG = "RoomRepositoryImpl"
 
     override fun addRoom(
@@ -31,7 +31,7 @@ class RoomRepositoryImpl : RoomRepository {
             }
             .addOnFailureListener { error ->
                 onResult(NetworkResult.OnError(null, error.message ?: "Cannot add room"))
-                Log.e(TAG, "Failed to add room: $roomKey", )
+                Log.e(TAG, "Failed to add room: $roomKey")
             }
 
         /* *
@@ -46,14 +46,14 @@ class RoomRepositoryImpl : RoomRepository {
     ) {
         roomListener = object : ValueEventListener {
             override fun onDataChange(snapshot: DataSnapshot) {
-                if (!snapshot.exists()){
+                if (!snapshot.exists()) {
                     onResult(NetworkResult.OnError(null, "Room not found"))
                     Log.d(TAG, "Room not found: $roomId")
                     return
                 }
 
                 val currentRoom = snapshot.getValue<Room>()
-                if (currentRoom == null){
+                if (currentRoom == null) {
                     onResult(NetworkResult.OnError(null, "Failed to parse room data"))
                     Log.d(TAG, "Failed to parse room data for: $roomId")
                     return
@@ -63,7 +63,7 @@ class RoomRepositoryImpl : RoomRepository {
             }
 
             override fun onCancelled(error: DatabaseError) {
-                onResult(NetworkResult.OnError(null, error.message ))
+                onResult(NetworkResult.OnError(null, error.message))
                 Log.e(TAG, "Failed to get room: $roomId, Error: ${error.message}")
             }
         }
@@ -118,7 +118,7 @@ class RoomRepositoryImpl : RoomRepository {
         }
     }
 
-    companion object{
+    companion object {
         private const val roomsPath = "rooms"
         private var instance: RoomRepositoryImpl? = null
         fun getInstance(): RoomRepositoryImpl {

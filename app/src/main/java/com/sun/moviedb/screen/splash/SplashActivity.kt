@@ -11,9 +11,9 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
 import com.google.firebase.auth.FirebaseAuth
-import com.sun.moviedb.screen.login.LoginActivity
 import com.sun.moviedb.R
 import com.sun.moviedb.screen.MainActivity
+import com.sun.moviedb.screen.login.LoginActivity
 import com.sun.moviedb.utils.session.UserSession
 
 class SplashActivity : AppCompatActivity() {
